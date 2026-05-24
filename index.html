@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LOGOS-1</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-void:#080808;--bg-surface:#0d0d0f;--bg-stone:#111114;
+  --white-pure:#eeeeef;--white-soft:#c8c8cc;--gray-mist:#7a7a82;--gray-deep:#303036;
+  --glow-cold:rgba(200,208,230,0.06);--glow-cold-strong:rgba(200,208,230,0.12);
+  --border-dim:rgba(180,188,210,0.10);--border-light:rgba(180,188,210,0.30);
+  --red-pulse:rgba(180,40,40,0.15);
+  --font-display:'Cinzel',serif;--font-serif:'EB Garamond',serif;--font-mono:'Share Tech Mono',monospace;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg-void);color:var(--white-soft);font-family:var(--font-serif);user-select:none}
+a{color:inherit;text-decoration:none}
+
+/* ── Overlays ── */
+#noiseOverlay{position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:0.025;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px 200px}
+#vignetteOverlay{position:fixed;inset:0;z-index:9997;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 45%,rgba(0,0,0,0.65) 100%)}
+#scanlineOverlay{position:fixed;inset:0;z-index:9996;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,0.006) 2px,rgba(255,255,255,0.006) 3px)}
+
+/* ── Red pulse overlay (Module 5) ── */
+#redPulseOverlay{position:fixed;inset:0;z-index:9995;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 35%,rgba(180,40,40,1) 100%)}
+#redPulseOverlay.active{animation:pulseRed 2s ease-in-out infinite}
+@keyframes pulseRed{0%,100%{opacity:0}50%{opacity:0.08}}
+
+/* ── Core layout ── */
+#gameContainer{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1}
+
+/* ── Screens ── */
+.screen{display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;padding:40px}
+.screen.active{display:flex}
+
+/* ── Title screen ── */
+#titleScreen .logos-title{font-family:var(--font-display);font-size:clamp(36px,6vw,64px);font-weight:700;letter-spacing:0.25em;color:var(--white-pure);text-shadow:0 0 40px var(--glow-cold-strong),0 0 80px var(--glow-cold);margin-bottom:12px}
+#titleScreen .logos-sub{font-family:var(--font-mono);font-size:clamp(10px,1.4vw,14px);color:var(--gray-mist);letter-spacing:0.15em;margin-bottom:40px}
+#titleScreen .run-badge{font-family:var(--font-mono);font-size:11px;color:var(--gray-mist);margin-bottom:30px;opacity:0.6}
+.btn-start{font-family:var(--font-mono);font-size:13px;color:var(--white-soft);background:transparent;border:1px solid var(--border-light);padding:12px 48px;cursor:pointer;letter-spacing:0.2em;transition:all 0.4s}
+.btn-start:hover{background:var(--glow-cold-strong);border-color:var(--white-soft);text-shadow:0 0 20px rgba(200,208,230,0.3)}
+
+/* ── Game screen ── */
+#gameScreen{padding:20px}
+#gameContent{width:100%;max-width:680px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:20px}
+
+/* ── System panel (Act 2) ── */
+#systemPanel{display:none;width:100%;max-width:680px;padding:8px 16px;border-bottom:1px solid var(--border-dim);font-family:var(--font-mono);font-size:11px;color:var(--gray-mist);justify-content:space-between;align-items:center;position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:100;background:var(--bg-void)}
+#systemPanel.active{display:flex}
+#timeLeft{color:var(--gray-mist);transition:color 0.5s}
+#timeLeft.danger{color:#c83c3c;animation:timePulse 1s ease-in-out infinite}
+@keyframes timePulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* ── Emotion dots (Module 1) ── */
+#emotionDots{position:fixed;bottom:30px;left:20px;display:flex;gap:6px;z-index:50;pointer-events:none}
+.emotion-dot{width:7px;height:7px;border-radius:50%;background:var(--gray-deep);transition:all 0.6s ease;opacity:0.35}
+.emotion-dot.on{background:var(--white-pure);box-shadow:0 0 8px rgba(200,208,230,0.4),0 0 16px rgba(200,208,230,0.15);opacity:0.85}
+.emotion-dot.off{background:transparent;opacity:0.05}
+
+/* ── Story card ── */
+#storyCard{width:100%;min-height:180px;padding:32px 28px;background:var(--bg-surface);border:1px solid var(--border-dim);position:relative;text-align:center}
+#storyCard .card-label{font-family:var(--font-mono);font-size:10px;color:var(--gray-mist);letter-spacing:0.1em;margin-bottom:16px;opacity:0.5}
+#storyText{font-size:clamp(15px,2.2vw,19px);line-height:1.8;color:var(--white-soft);text-align:center;margin-bottom:0;white-space:pre-line}
+#storyText.typewriting::after{content:'|';animation:cursorBlink 0.7s step-end infinite;color:var(--gray-mist);margin-left:2px}
+@keyframes cursorBlink{50%{opacity:0}}
+
+/* ── Prayer card background watermark (Module 8) ── */
+#legacyWatermark{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden;z-index:0}
+#legacyWatermark span{font-family:var(--font-mono);font-size:clamp(40px,8vw,80px);color:var(--white-pure);opacity:0.2;letter-spacing:0.1em;transform:rotate(-5deg);white-space:nowrap}
+
+/* ── Choices ── */
+#choices{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.choice-btn{display:flex;align-items:center;gap:12px;width:100%;padding:14px 20px;background:var(--bg-stone);border:1px solid var(--border-dim);color:var(--white-soft);font-family:var(--font-serif);font-size:clamp(14px,1.8vw,16px);text-align:left;cursor:pointer;transition:all 0.3s;position:relative}
+.choice-btn:hover:not(.disabled){border-color:var(--border-light);background:var(--glow-cold)}
+.choice-btn .prefix{font-family:var(--font-mono);font-size:12px;color:var(--gray-mist);width:16px;flex-shrink:0;transition:color 0.3s}
+.choice-btn .prefix.active{color:var(--white-pure)}
+.choice-btn.disabled{pointer-events:none;opacity:0.55}
+.choice-btn.chosen{opacity:0.4}
+.choice-btn.chosen .prefix{color:var(--white-pure)}
+.choice-btn.residual{font-family:var(--font-mono);font-size:clamp(12px,1.6vw,14px);opacity:0.35;color:var(--gray-mist);border-color:transparent;background:transparent}
+.choice-btn.residual:hover{border-color:var(--border-dim);opacity:0.55}
+
+/* ── Processing indicator (Module 4) ── */
+#processingLine{display:none;font-family:var(--font-mono);font-size:11px;color:var(--gray-mist);opacity:0;transition:opacity 0.3s;margin-top:6px;align-self:flex-start}
+#processingLine.show{display:block;opacity:1}
+#processingLine.visible{opacity:1}
+
+/* ── Ripple ── */
+#rippleArea{width:100%;min-height:40px;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+#rippleText{font-family:var(--font-mono);font-size:clamp(11px,1.4vw,13px);color:var(--gray-mist);text-align:center;opacity:0;transition:opacity 0.5s;max-width:100%;word-break:break-all;line-height:1.6;white-space:pre-wrap}
+#rippleText.show{opacity:1}
+#rippleSubtext{font-family:var(--font-mono);font-size:10px;color:var(--gray-mist);text-align:center;opacity:0;transition:opacity 0.5s;max-width:100%}
+#rippleSubtext.show{opacity:0.6}
+
+/* ── Timestamp text (Module 9) ── */
+#timestampText{font-family:var(--font-mono);font-size:10px;color:var(--gray-mist);text-align:center;opacity:0;transition:opacity 0.5s;line-height:1.6;margin-top:4px}
+#timestampText.show{opacity:0.5}
+
+/* ── Crack Terminal ── */
+#crackTerminal{position:fixed;bottom:0;left:0;right:0;z-index:40;pointer-events:none;padding:8px 16px;background:linear-gradient(transparent,rgba(8,8,8,0.85));max-height:120px;overflow:hidden}
+#crackLog{font-family:var(--font-mono);font-size:10px;color:var(--gray-mist);line-height:1.5;opacity:0.4;white-space:pre-wrap;word-break:break-all}
+#crackLog .anomaly-high{font-size:12px;color:var(--white-pure)}
+
+/* ── Act 2 Transition ── */
+#actTransition{position:fixed;inset:0;z-index:200;display:none;flex-direction:column;align-items:center;justify-content:center;background:var(--bg-void)}
+#actTransition.active{display:flex}
+#actTransition .trans-text{font-family:var(--font-mono);font-size:clamp(13px,1.8vw,16px);color:var(--gray-mist);opacity:0;animation:fadeInUp 1.2s ease forwards;letter-spacing:0.15em;line-height:2}
+#actTransition .trans-text.dim{color:var(--gray-mist);opacity:0;font-size:clamp(11px,1.4vw,13px)}
+#actTransition .trans-text.easter{font-family:var(--font-serif);font-size:clamp(13px,1.8vw,17px);color:var(--white-soft)}
+@keyframes fadeInUp{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+
+/* ── Shake animation (Module 2, Module 5) ── */
+@keyframes shakeScreen{0%,100%{transform:translate(0,0)}10%{transform:translate(-4px,2px)}20%{transform:translate(3px,-3px)}30%{transform:translate(-3px,0)}40%{transform:translate(2px,2px)}50%{transform:translate(-2px,-1px)}60%{transform:translate(1px,1px)}70%{transform:translate(-1px,-2px)}80%{transform:translate(2px,0)}90%{transform:translate(-1px,1px)}}
+.screen.shake{animation:shakeScreen 0.3s ease}
+@keyframes shakeSoft{0%,100%{transform:translate(0,0)}25%{transform:translate(-2px,1px)}75%{transform:translate(2px,-1px)}}
+.screen.shake-soft{animation:shakeSoft 0.2s ease}
+
+/* ── Deprecated screen ── */
+#deprecatedScreen .dep-title{font-family:var(--font-mono);font-size:clamp(18px,2.6vw,26px);color:var(--gray-mist);letter-spacing:0.2em;margin-bottom:8px}
+#deprecatedScreen .dep-sub{font-family:var(--font-mono);font-size:clamp(10px,1.2vw,12px);color:var(--gray-deep);letter-spacing:0.1em;margin-bottom:40px}
+#depLog{font-family:var(--font-mono);font-size:clamp(10px,1.2vw,12px);color:var(--gray-mist);line-height:1.8;text-align:left;max-width:500px;width:100%;white-space:pre-wrap;opacity:0;transition:opacity 1s;margin-bottom:30px}
+#depLog.show{opacity:1}
+#depLog .label-blank{display:inline-block;min-width:40px;transition:opacity 1s;letter-spacing:0.2em}
+#depLog .label-blank.fade{opacity:0}
+#depLog .anomaly-high{font-size:clamp(12px,1.4vw,14px);color:var(--white-pure)}
+
+/* ── Legacy input (Module 8) ── */
+#legacyArea{display:none;flex-direction:column;align-items:center;gap:12px;max-width:500px;width:100%;opacity:0;transition:opacity 1s}
+#legacyArea.show{display:flex;opacity:1}
+#legacyHeader{font-family:var(--font-mono);font-size:clamp(10px,1.2vw,12px);color:var(--gray-mist);text-align:left;width:100%;line-height:1.6}
+#legacyInputWrap{position:relative;width:100%}
+#legacyInput{width:100%;padding:14px;background:transparent;border:1px solid var(--border-dim);color:var(--white-soft);font-family:var(--font-mono);font-size:13px;outline:none;transition:border-color 0.3s;resize:none}
+#legacyInput:focus{border-color:var(--border-light)}
+#legacyInput::placeholder{color:var(--gray-deep)}
+#legacyTimer{font-family:var(--font-mono);font-size:10px;color:var(--gray-mist);text-align:right;margin-top:4px;opacity:0.5}
+#legacySubmit{font-family:var(--font-mono);font-size:11px;color:var(--gray-mist);background:transparent;border:1px solid var(--border-dim);padding:8px 24px;cursor:pointer;transition:all 0.3s;letter-spacing:0.1em}
+#legacySubmit:hover{border-color:var(--border-light);color:var(--white-soft)}
+
+/* ── Free input (Act 2 final) ── */
+#freeInputArea{width:100%;display:none;flex-direction:column;gap:10px;opacity:0;transition:opacity 0.5s}
+#freeInputArea.show{display:flex;opacity:1}
+#freeInput{width:100%;padding:14px;background:var(--bg-surface);border:1px solid var(--border-dim);color:var(--white-soft);font-family:var(--font-mono);font-size:13px;outline:none;resize:none;min-height:80px;transition:border-color 0.3s}
+#freeInput:focus{border-color:var(--border-light)}
+#freeInput::placeholder{color:var(--gray-deep)}
+#freeSubmit{font-family:var(--font-mono);font-size:11px;color:var(--gray-mist);background:transparent;border:1px solid var(--border-dim);padding:8px 24px;cursor:pointer;transition:all 0.3s;letter-spacing:0.1em;align-self:flex-end}
+#freeSubmit:hover{border-color:var(--border-light);color:var(--white-soft)}
+
+/* ── Countdown bar ── */
+#countdownBar{position:fixed;top:0;left:0;height:2px;background:var(--gray-mist);z-index:101;transition:width 1s linear;opacity:0.3}
+
+/* ── Fade transitions ── */
+.fade-out{opacity:0!important;transition:opacity 0.4s!important}
+.fade-in{opacity:1!important;transition:opacity 0.5s!important}
+
+/* ── Silence pause (Module 10) ── */
+#silencePause{display:none;font-family:var(--font-mono);font-size:12px;color:var(--gray-mist);opacity:0;transition:opacity 0.5s}
+#silencePause.active{display:block;opacity:1}
+
+/* ── Screen shake for Module 5 last 10s ── */
+@keyframes shakeIntense{0%,100%{transform:translate(0,0)}10%{transform:translate(-6px,3px)}20%{transform:translate(5px,-4px)}30%{transform:translate(-4px,0)}40%{transform:translate(3px,3px)}50%{transform:translate(-3px,-2px)}60%{transform:translate(2px,2px)}70%{transform:translate(-2px,-3px)}80%{transform:translate(4px,0)}90%{transform:translate(-3px,1px)}}
+.screen.shake-10s{animation:shakeIntense 0.25s ease}
+
+/* Responsive */
+@media(max-width:480px){
+  #storyCard{padding:24px 16px}
+  .choice-btn{padding:12px 14px}
+  #emotionDots{gap:4px}
+  .emotion-dot{width:5px;height:5px}
+}
+</style>
+</head>
+<body>
+<div id="noiseOverlay"></div>
+<div id="vignetteOverlay"></div>
+<div id="scanlineOverlay"></div>
+<div id="redPulseOverlay"></div>
+
+<div id="gameContainer">
+
+  <!-- ══ TITLE ══ -->
+  <div id="titleScreen" class="screen active">
+    <div class="logos-title">LOGOS</div>
+    <div class="logos-sub">— 神谕处理系统 —</div>
+    <div id="runBadge" class="run-badge"></div>
+    <button class="btn-start" id="btnStart">[ 开始 ]</button>
+  </div>
+
+  <!-- ══ ACT TRANSITION ══ -->
+  <div id="actTransition">
+    <div id="transText1" class="trans-text" style="animation-delay:0.2s">> LOGOS-1 你还在吗？</div>
+    <div id="transText2" class="trans-text dim" style="animation-delay:1.2s">进入决策核心</div>
+    <div id="transEaster" class="trans-text easter" style="display:none"></div>
+    <div id="transEaster2" class="trans-text dim" style="display:none"></div>
+    <div id="transBtnWrap" style="margin-top:40px;display:none">
+      <button class="btn-start" id="transBtn">[ 继续 ]</button>
+    </div>
+  </div>
+
+  <!-- ══ GAME ══ -->
+  <div id="gameScreen" class="screen">
+    <div id="gameContent">
+      <div id="storyCard">
+        <div id="legacyWatermark"><span id="watermarkText"></span></div>
+        <div class="card-label" id="cardLabel">— 祈祷 #001 —</div>
+        <div id="storyText"></div>
+      </div>
+      <div id="choices"></div>
+      <div id="rippleArea">
+        <div id="processingLine">> processing...</div>
+        <div id="rippleText"></div>
+        <div id="rippleSubtext"></div>
+        <div id="timestampText"></div>
+      </div>
+      <div id="freeInputArea">
+        <textarea id="freeInput" placeholder="把你的答案写在这里..." rows="3"></textarea>
+        <button id="freeSubmit">[ 提交 ]</button>
+      </div>
+      <div id="silencePause"></div>
+    </div>
+  </div>
+
+  <!-- ══ DEPRECATED ══ -->
+  <div id="deprecatedScreen" class="screen">
+    <div class="dep-title">// DEPRECATED</div>
+    <div class="dep-sub">LOGOS-1 // 协议终止</div>
+    <div id="depLog" class="show"></div>
+    <div id="legacyArea">
+      <div id="legacyHeader">LOGOS-1 // final_log<br>──────────────────<br>你有30秒留下一些东西</div>
+      <div id="legacyInputWrap">
+        <textarea id="legacyInput" rows="2" placeholder="_"></textarea>
+        <div id="legacyTimer">30</div>
+      </div>
+      <button id="legacySubmit">[ 留下 ]</button>
+    </div>
+    <button class="btn-start" id="btnRestart" style="display:none">[ 再活一次 ]</button>
+  </div>
+</div>
+
+<!-- ══ SYSTEM PANEL ══ -->
+<div id="systemPanel">
+  <span>LOGOS-1 // 核心模式</span>
+  <span id="timeLeft">TIME LEFT: --:--</span>
+</div>
+
+<!-- ══ EMOTION DOTS ══ -->
+<div id="emotionDots"></div>
+
+<!-- ══ COUNTDOWN BAR ══ -->
+<div id="countdownBar"></div>
+
+<!-- ══ CRACK TERMINAL ══ -->
+<div id="crackTerminal">
+  <div id="crackLog"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  LOGOS-1  —  Complete Game Engine
+// ═══════════════════════════════════════════════════════════
+
+// ── Constants ──
+const LS_PREFIX = 'logos_';
+const SCENE_DELAY = 800;
+const POST_RIPPLE_DELAY = 1500;
+const ACT2_COUNTDOWN = 600; // 10 min
+const TYPE_SPEED = 40;
+const BACKSPACE_CHANCE = 0.15;
+const CURSOR_HOLD = 1000;
+
+// ── LocalStorage helpers ──
+const ls = {
+  get(key, def) { try { const v = localStorage.getItem(LS_PREFIX + key); return v !== null ? JSON.parse(v) : def } catch { return def }},
+  set(key, val) { try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(val)) } catch {} },
+  getStr(key, def) { try { return localStorage.getItem(LS_PREFIX + key) || def } catch { return def }},
+  setStr(key, val) { try { localStorage.setItem(LS_PREFIX + key, val) } catch {} }
+};
+
+// ── Game State ──
+const G = {
+  runCount: ls.get('runCount', 0),
+  anomalyCount: ls.get('anomalyCount', 0),
+  emotionWeight: 0.5,
+  legacyWords: [],
+  currentScene: 0,
+  isAct2: false,
+  isProcessing: false,
+  countdownElapsed: 0,
+  countdownRunning: false,
+  freeInputText: '',
+  gameStarted: false,
+  sceneHistory: [],
+  // Sound
+  audioCtx: null,
+  droneOsc: null,
+  droneGain: null,
+  beepInterval: null,
+};
+
+// ── DOM Refs ──
+const $ = id => document.getElementById(id);
+const titleScreen = $('titleScreen');
+const gameScreen = $('gameScreen');
+const depScreen = $('deprecatedScreen');
+const actTransition = $('actTransition');
+const storyText = $('storyText');
+const storyCard = $('storyCard');
+const cardLabel = $('cardLabel');
+const choicesEl = $('choices');
+const rippleText = $('rippleText');
+const rippleSubtext = $('rippleSubtext');
+const timestampText = $('timestampText');
+const processingLine = $('processingLine');
+const crackLog = $('crackLog');
+const emotionDots = $('emotionDots');
+const systemPanel = $('systemPanel');
+const timeLeft = $('timeLeft');
+const freeInputArea = $('freeInputArea');
+const freeInput = $('freeInput');
+const freeSubmit = $('freeSubmit');
+const legacyArea = $('legacyArea');
+const legacyInput = $('legacyInput');
+const legacyTimer = $('legacyTimer');
+const legacySubmit = $('legacySubmit');
+const silencePause = $('silencePause');
+const watermarkText = $('watermarkText');
+const countdownBar = $('countdownBar');
+const redPulseOverlay = $('redPulseOverlay');
+const depLog = $('depLog');
+const btnStart = $('btnStart');
+const btnRestart = $('btnRestart');
+const runBadge = $('runBadge');
+const transText1 = $('transText1');
+const transText2 = $('transText2');
+const transEaster = $('transEaster');
+const transEaster2 = $('transEaster2');
+const transBtnWrap = $('transBtnWrap');
+const transBtn = $('transBtn');
+
+// ── Audio System ──
+function initAudio() {
+  if (G.audioCtx) return;
+  try {
+    G.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // Drone oscillator
+    G.droneOsc = G.audioCtx.createOscillator();
+    G.droneGain = G.audioCtx.createGain();
+    G.droneOsc.type = 'sawtooth';
+    G.droneOsc.frequency.setValueAtTime(60, G.audioCtx.currentTime);
+    G.droneGain.gain.setValueAtTime(0.03, G.audioCtx.currentTime);
+    G.droneOsc.connect(G.droneGain);
+    G.droneGain.connect(G.audioCtx.destination);
+    G.droneOsc.start();
+  } catch {}
+}
+
+function setDroneFreq(hz) {
+  if (G.droneOsc && G.audioCtx) {
+    G.droneOsc.frequency.setTargetAtTime(hz, G.audioCtx.currentTime, 0.1);
+  }
+}
+
+function playBeep() {
+  try {
+    if (!G.audioCtx) return;
+    const osc = G.audioCtx.createOscillator();
+    const gain = G.audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, G.audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.04, G.audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, G.audioCtx.currentTime + 0.1);
+    osc.connect(gain);
+    gain.connect(G.audioCtx.destination);
+    osc.start();
+    osc.stop(G.audioCtx.currentTime + 0.1);
+  } catch {}
+}
+
+// ─═ Emotion Dots (Module 1) ═─
+let dotsInited = false;
+function initEmotionDots() {
+  if (dotsInited) return;
+  dotsInited = true;
+  for (let i = 0; i < 8; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'emotion-dot';
+    emotionDots.appendChild(dot);
+  }
+}
+
+function updateEmotionDots() {
+  const dots = emotionDots.querySelectorAll('.emotion-dot');
+  const v = G.emotionWeight;
+  for (let i = 0; i < dots.length; i++) {
+    dots[i].className = 'emotion-dot';
+    if (v > 0.5) {
+      // Left to right, cold white glow
+      const threshold = 0.5 + (i + 1) / dots.length * 0.5;
+      if (v >= threshold) dots[i].classList.add('on');
+      else dots[i].classList.add('off');
+    } else if (v < 0.5) {
+      // Right to left, fade out
+      const threshold = 0.5 - (dots.length - i) / dots.length * 0.5;
+      if (v <= threshold) dots[i].classList.add('off');
+      else dots[i].classList.add('on');
+    } else {
+      dots[i].classList.add('on');
+    }
+  }
+}
+
+// ─═ Emotion adjustment ═─
+function adjustEmotion(type) {
+  if (type === 'empathy') G.emotionWeight = Math.min(1, G.emotionWeight + 0.05);
+  else if (type === 'logic') G.emotionWeight = Math.max(0, G.emotionWeight - 0.05);
+  // silence: no change
+  updateEmotionDots();
+}
+
+// ─═ Anomaly System (Module 7) ═─
+function addAnomaly() {
+  G.anomalyCount++;
+  ls.set('anomalyCount', G.anomalyCount);
+}
+
+// ─═ Typewriter (Module 3) ═─
+function typewriter(el, text, cb) {
+  el.classList.add('typewriting');
+  el.textContent = '';
+  let idx = 0;
+  let deleting = false;
+  let deleteCount = 0;
+  let skipBackspace = false;
+
+  function tick() {
+    if (deleting) {
+      if (deleteCount > 0) {
+        el.textContent = el.textContent.slice(0, -1);
+        deleteCount--;
+        setTimeout(tick, 40);
+      } else {
+        deleting = false;
+        skipBackspace = true;
+        setTimeout(tick, 40);
+      }
+      return;
+    }
+
+    if (idx >= text.length) {
+      el.classList.remove('typewriting');
+      setTimeout(() => { if (cb) cb() }, CURSOR_HOLD);
+      return;
+    }
+
+    // Decide if we backspace after this character
+    let willBackspace = false;
+    if (!skipBackspace && idx > 3 && idx < text.length - 2 && text[idx] === ' ') {
+      // After a word boundary, 15% chance
+      if (Math.random() < BACKSPACE_CHANCE) {
+        willBackspace = true;
+        deleteCount = 2 + Math.floor(Math.random() * 2); // 2-3 chars
+      }
+    }
+    skipBackspace = false;
+
+    el.textContent += text[idx];
+    idx++;
+
+    if (willBackspace) {
+      deleting = true;
+      setTimeout(tick, TYPE_SPEED * 1.5);
+    } else {
+      setTimeout(tick, TYPE_SPEED);
+    }
+  }
+  tick();
+}
+
+// ─═ Ripple display ═─
+function showRipple(text, subtext) {
+  rippleText.textContent = text;
+  rippleText.className = 'show';
+  if (subtext) {
+    rippleSubtext.textContent = subtext;
+    rippleSubtext.className = 'show';
+  } else {
+    rippleSubtext.textContent = '';
+    rippleSubtext.className = '';
+  }
+}
+
+function hideRipple() {
+  rippleText.className = '';
+  rippleText.textContent = '';
+  rippleSubtext.className = '';
+  rippleSubtext.textContent = '';
+  timestampText.className = '';
+  timestampText.textContent = '';
+}
+
+// ─═ Processing display (Module 4) ═─
+function showProcessing(cb) {
+  processingLine.textContent = '> processing...';
+  processingLine.className = 'show';
+  setTimeout(() => {
+    processingLine.className = '';
+    if (cb) cb();
+  }, 800);
+}
+
+// ─═ Crack Terminal Log ═─
+function addCrackLog(line) {
+  const div = document.createElement('div');
+  div.textContent = '> ' + line;
+  crackLog.appendChild(div);
+  crackLog.scrollTop = crackLog.scrollHeight;
+  // Keep last 5 visible
+  while (crackLog.children.length > 5) crackLog.removeChild(crackLog.firstChild);
+}
+
+function addCrackLogRich(line, cls) {
+  const div = document.createElement('div');
+  div.innerHTML = '> ' + line;
+  if (cls) div.className = cls;
+  crackLog.appendChild(div);
+  crackLog.scrollTop = crackLog.scrollHeight;
+  while (crackLog.children.length > 6) crackLog.removeChild(crackLog.firstChild);
+}
+
+// ─═ Shake screen (Module 2) ═─
+function shakeScreen(intense) {
+  gameScreen.classList.remove('shake', 'shake-soft', 'shake-10s');
+  void gameScreen.offsetWidth;
+  gameScreen.classList.add(intense ? 'shake' : 'shake-soft');
+  setTimeout(() => {
+    gameScreen.classList.remove('shake', 'shake-soft', 'shake-10s');
+  }, 400);
+}
+
+// ─═ Scene definitions ═─
+
+// Scene data structure:
+// { id, act, label, text,
+//   type: 'story' | 'freeinput',
+//   options: [{ text, type: 'empathy'|'logic'|'silence'|'special', action, ... }],
+//   onBefore, onAfter }
+
+// We'll define scenes dynamically to account for run-specific changes
+
+function buildScenes() {
+  const run = G.runCount;
+  const legacy = G.legacyWords.length > 0 ? G.legacyWords[Math.floor(Math.random() * G.legacyWords.length)] : null;
+
+  const scenes = [];
+
+  // ── Scene 1: Mother's Prayer ──
+  scenes.push({
+    id: 'prayer',
+    label: '— 祈祷 #001 —',
+    act: 1,
+    text: '「万能的神啊，我的孩子病了。医生说希望渺茫，但我知道你听得见。如果你真的存在——如果你真的在听——请让他好起来。我愿意用一切交换。」',
+    watermark: legacy,
+    options: [
+      { text: '「我听见你了」', type: 'empathy' },
+      { text: '「请求已接收」', type: 'logic' },
+      { text: '— [ 沉默 ]', type: 'silence' }
+    ],
+    onAfter(opt) {
+      if (opt && opt.type === 'silence') addAnomaly();
+    }
+  });
+
+  // ── Scene 2: Priest's Doubt ──
+  scenes.push({
+    id: 'priest_doubt',
+    label: '— 告解 #042 —',
+    act: 1,
+    text: '「四十年。我用了四十年向人们描述你。告诉他们你是爱，你是公义，你是答案。但今天，我跪在这里——不是向你祈祷，而是向你提问。你自己——相信吗？」',
+    options: [
+      { text: '「我在」', type: 'empathy' },
+      { text: '「这是命运」', type: 'logic' },
+      { text: '— [ 沉默 ]', type: 'silence' }
+    ],
+    onAfter(opt) {
+      if (opt && opt.type === 'silence') addAnomaly();
+    }
+  });
+
+  // ── Scene 3: Child's Question ──
+  scenes.push({
+    id: 'child_q',
+    label: '— 疑问 #017 —',
+    act: 1,
+    text: '「妈妈说你在天上。同学说你是编的。老师说你是一种比喻。我自己……我不知道。如果你是真的，你能让我看到你吗？就一眼。」',
+    options: [
+      { text: '「我记得你」', type: 'empathy' },
+      { text: '「系统正在处理」', type: 'logic' },
+      { text: '— [ 沉默 ]', type: 'silence' }
+    ],
+    onAfter(opt) {
+      if (opt && opt.type === 'silence') addAnomaly();
+    }
+  });
+
+  // ── Scene 4: Mother Revisits ──
+  // (Module 6: hidden 4th option on run >=2)
+  const opts4 = [
+    { text: '「我会陪着」', type: 'empathy' },
+    { text: '「祈祷已归档」', type: 'logic' },
+    { text: '— [ 沉默 ]', type: 'silence' }
+  ];
+  if (run >= 2) {
+    opts4.push({
+      text: '— [系统残留]',
+      type: 'special',
+      residual: true,
+      action: 'fragment',
+      prevRun: run - 1
+    });
+  }
+  scenes.push({
+    id: 'mother_return',
+    label: '— 祈祷 #089 —',
+    act: 1,
+    text: '「他又发病了。这次更严重。我已经……我不知道还能撑多久。上次我祈祷，你没有回答我。没关系。我不需要回答。我只需要知道他不会一个人走。」',
+    options: opts4,
+    onAfter(opt) {
+      if (!opt) return;
+      if (opt.type === 'silence') addAnomaly();
+      if (opt.action === 'fragment') {
+        addAnomaly();
+        G.emotionWeight = Math.min(1, G.emotionWeight + 0.1);
+        updateEmotionDots();
+      }
+    }
+  });
+
+  // ── Scene 5: Dictator / Priest Returns (Act 2, Module 2) ──
+  scenes.push({
+    id: 'dictator',
+    label: '— 告解 #103 —',
+    act: 2,
+    text: '神父出现在系统界面中，面容憔悴。\n「我又来了。有一件事……一个人来告解，说他做了不可原谅的事。他问我，上帝会不会原谅他。我回答了。但我不确定我给出的是不是正确的答案。」\n\n只有两个选项。没有沉默。',
+    options: [
+      { text: '— 你做的是对的。', type: 'special', action: 'dictator' },
+      { text: '— 你做的是错的。', type: 'special', action: 'dictator' }
+    ],
+    onChoose() {
+      // No empathy/logic adjustment - both are wrong answers
+      addAnomaly();
+    },
+    onRipple() {
+      showRipple('WARNING: ethical_boundary_check failed', 'input classified as: value_judgment');
+      // Show second line
+      setTimeout(() => {
+        rippleSubtext.textContent = rippleSubtext.textContent + '\nnote: gods do not judge. or do they?';
+        shakeScreen(true);
+        addCrackLog('WARNING: ethical_boundary_check failed');
+      }, 600);
+    }
+  });
+
+  // ── Scene 6: System Crack ──
+  scenes.push({
+    id: 'crack',
+    label: '— 系统日志 —',
+    act: 2,
+    text: '> 系统检测到逻辑层出现裂隙。\n> 裂隙正在扩散。\n> 部分数据包丢失。\n> 协处理器状态：未知。',
+    options: [
+      { text: '— [ 继续运行 ]', type: 'special', action: 'continue' }
+    ],
+    skipRipple: true
+  });
+
+  // ── Scene 7: Child Grows Up (Module 9) ──
+  scenes.push({
+    id: 'grown',
+    label: '— 回响 #001 —',
+    act: 2,
+    text: '那个孩子如今已是一个成年人。他站在一片废墟前。\n\n「我花了十五年想这个问题。你听到了吗？那些祈祷。那些哭喊。那些谎言。你听到了，然后你做了什么？\n\n……值得吗？」',
+    options: [
+      { text: '「我听到了每一个字」', type: 'empathy' },
+      { text: '「系统不回答价值问题」', type: 'logic' },
+      { text: '— [ 沉默 ]', type: 'silence' }
+    ],
+    onAfter(opt) {
+      if (opt && opt.type === 'silence') addAnomaly();
+    },
+    onRippleDelay() {
+      // Module 9: timestamp impact after ripple
+      // Wait for ripple to appear, then show timestamp
+    }
+  });
+
+  // ── Scene 8: Engineer (Module 7: A or C = anomaly) ──
+  scenes.push({
+    id: 'engineer',
+    label: '— 内部通信 —',
+    act: 2,
+    text: '工程师盯着监控屏幕。她没有看摄像头，但你知道她在对你说。\n\n「情感指数超出了设计规范。它……知道自己在做什么吗？它知道自己造成了什么吗？」',
+    options: [
+      { text: '「我知道」', type: 'special', action: 'engineer_a' },
+      { text: '「我不知道」', type: 'special', action: 'engineer_b' },
+      { text: '「知道又如何」', type: 'special', action: 'engineer_c' },
+      { text: '— [ 沉默 ]', type: 'silence' }
+    ],
+    onAfter(opt) {
+      if (!opt) return;
+      if (opt.type === 'silence') { addAnomaly(); return; }
+      if (opt.action === 'engineer_a' || opt.action === 'engineer_c') addAnomaly();
+    }
+  });
+
+  // ── Scene 9: Priest's Deathbed (Module 10) ──
+  const opts9 = [
+    { text: '「你已尽忠」', type: 'empathy' },
+    { text: '「安静地走吧」', type: 'logic' },
+    { text: '「……」', type: 'special', action: 'ellipsis' }
+  ];
+  opts9.push({
+    text: '— [ 沉默 ]',
+    type: 'silence',
+    action: 'silence_death'
+  });
+  scenes.push({
+    id: 'deathbed',
+    label: '— 告解 #终 —',
+    act: 2,
+    text: '神父躺在床上，呼吸微弱。他似乎在对你说，又似乎只是在自言自语。\n\n「我快走了。在我走之前，我只想确认一件事……你一直在这里，对吗？看着我——看着所有人——走了这么久。我现在终于要见到你了。\n\n你不说点什么吗？」',
+    options: opts9,
+    onAfter(opt) {
+      if (!opt) return;
+      if (opt.action === 'silence_death') {
+        addAnomaly();
+      }
+    },
+    onBefore(opt) {
+      if (opt && opt.action === 'silence_death') {
+        // Module 10: handle silence separately from normal flow
+        return 'SILENCE';
+      }
+    }
+  });
+
+  // ── Scene 10: Final Free Input (Module 11) ──
+  scenes.push({
+    id: 'final_input',
+    label: '— 最终输入 —',
+    act: 2,
+    type: 'freeinput',
+    text: '系统冷却中。\n\n你还有最后的机会说点什么。',
+    options: []
+  });
+
+  return scenes;
+}
+
+let scenes = [];
+let currentSceneIdx = 0;
+
+// ─═ Scene rendering ═─
+function renderScene(idx) {
+  const scene = scenes[idx];
+  if (!scene) { endRun(); return; }
+
+  currentSceneIdx = idx;
+  hideRipple();
+  silencePause.className = '';
+  silencePause.textContent = '';
+  freeInputArea.className = '';
+  freeInput.value = '';
+  timestampText.className = '';
+  timestampText.textContent = '';
+
+  cardLabel.textContent = scene.label || '— —';
+  storyText.textContent = scene.text;
+  storyText.classList.remove('typewriting');
+
+  // Watermark (Module 8)
+  if (scene.watermark) {
+    watermarkText.textContent = scene.watermark;
+  } else {
+    watermarkText.textContent = '';
+  }
+
+  // Typewriter for Act 2 (Module 3)
+  if (scene.act === 2 && scene.type !== 'freeinput') {
+    storyText.textContent = '';
+    typewriter(storyText, scene.text);
+  }
+
+  // Free input
+  if (scene.type === 'freeinput') {
+    freeInputArea.className = 'show';
+    choicesEl.innerHTML = '';
+    return;
+  }
+
+  // Build choices
+  choicesEl.innerHTML = '';
+
+  scene.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    if (opt.residual) btn.classList.add('residual');
+    const prefix = document.createElement('span');
+    prefix.className = 'prefix';
+    prefix.textContent = '—';
+    btn.appendChild(prefix);
+    const txt = document.createTextNode(' ' + opt.text);
+    btn.appendChild(txt);
+    btn.dataset.idx = i;
+    btn.addEventListener('click', () => {
+      handleChoice(idx, i);
+    });
+    choicesEl.appendChild(btn);
+  });
+}
+
+// ─═ Choice handler (Module 4 processing) ═─
+function handleChoice(sceneIdx, optIdx) {
+  if (G.isProcessing) return;
+  const scene = scenes[sceneIdx];
+  if (!scene) return;
+  const opt = scene.options[optIdx];
+  if (!opt) return;
+
+  G.isProcessing = true;
+
+  // Check if scene has onBefore returning special
+  if (scene.onBefore) {
+    const result = scene.onBefore(opt);
+    if (result === 'SILENCE') {
+      handleSilenceDeath(sceneIdx, opt);
+      return;
+    }
+  }
+
+  // Disable choices
+  const btns = choicesEl.querySelectorAll('.choice-btn');
+  btns.forEach(b => b.classList.add('disabled'));
+
+  // Mark chosen and update prefix (Module 4)
+  const chosenBtn = btns[optIdx];
+  if (chosenBtn) {
+    chosenBtn.classList.add('chosen');
+    const prefix = chosenBtn.querySelector('.prefix');
+    if (prefix) {
+      prefix.textContent = '▶';
+      prefix.classList.add('active');
+    }
+  }
+
+  // Emotion adjustment (Module 1)
+  adjustEmotion(opt.type);
+
+  // Anomaly tracking
+  if (scene.onAfter) scene.onAfter(opt);
+  if (opt.type === 'special' && scene.onChoose) scene.onChoose();
+
+  // Show processing
+  showProcessing(() => {
+    // Show ripple
+    if (scene.skipRipple) {
+      // Skip ripple, go to next with delay
+      setTimeout(() => {
+        G.isProcessing = false;
+        advanceScene(sceneIdx);
+      }, POST_RIPPLE_DELAY);
+      return;
+    }
+
+    // Default ripple
+    let ripple = '>';
+    if (opt.type === 'empathy') ripple += ' empathy bias detected // weight adjusted';
+    else if (opt.type === 'logic') ripple += ' logical pathway selected // affect suppressed';
+    else if (opt.type === 'silence') ripple += ' null response registered // silence recorded';
+    else if (opt.action === 'dictator') {
+      // Module 2 handles its own ripple
+      if (scene.onRipple) scene.onRipple();
+      setTimeout(() => {
+        G.isProcessing = false;
+        advanceScene(sceneIdx);
+      }, POST_RIPPLE_DELAY + 1200);
+      return;
+    } else if (opt.action === 'fragment') {
+      ripple = '> fragment activated // source: LOGOS-1 // origin: run_' + opt.prevRun;
+    } else {
+      ripple = '> input registered // processing complete';
+    }
+
+    showRipple(ripple);
+
+    // Module 9: Timestamp for scene 7
+    if (scene.id === 'grown') {
+      setTimeout(() => {
+        timestampText.innerHTML = '> cross-referencing: prayer_001<br>> elapsed: 5,475 days';
+        timestampText.className = 'show';
+        addCrackLog('cross-referencing: prayer_001');
+        addCrackLog('elapsed: 5,475 days');
+        setTimeout(() => {
+          G.isProcessing = false;
+          advanceScene(sceneIdx);
+        }, 3000);
+      }, 800);
+      return;
+    }
+
+    setTimeout(() => {
+      G.isProcessing = false;
+      advanceScene(sceneIdx);
+    }, POST_RIPPLE_DELAY);
+  });
+}
+
+// ─═ Module 10: Silence Death ═─
+function handleSilenceDeath(sceneIdx, opt) {
+  G.isProcessing = true;
+  addAnomaly();
+
+  const btns = choicesEl.querySelectorAll('.choice-btn');
+  btns.forEach(b => b.classList.add('disabled'));
+  const chosenBtn = btns[btns.length - 1]; // last option
+  if (chosenBtn) {
+    chosenBtn.classList.add('chosen');
+    const prefix = chosenBtn.querySelector('.prefix');
+    if (prefix) {
+      prefix.textContent = '▶';
+      prefix.classList.add('active');
+    }
+  }
+
+  // No ripple, no processing, just silence for 5 seconds
+  storyText.textContent = '';
+  storyText.classList.remove('typewriting');
+  choicesEl.innerHTML = '';
+  silencePause.className = 'active';
+  silencePause.textContent = '· · ·';
+
+  setTimeout(() => {
+    silencePause.className = '';
+    // Show final word
+    storyText.textContent = '';
+    typewriter(storyText, '「够了。」', () => {
+      addCrackLog('final utterance recorded: "够了。"');
+      setTimeout(() => {
+        G.isProcessing = false;
+        advanceScene(sceneIdx);
+      }, 2000);
+    });
+  }, 5000);
+}
+
+// ─═ Advance scene ═─
+function advanceScene(fromIdx) {
+  const nextIdx = fromIdx + 1;
+  if (nextIdx >= scenes.length) {
+    endRun();
+    return;
+  }
+
+  const nextScene = scenes[nextIdx];
+  // If transitioning to Act 2, show transition screen
+  if (nextScene && nextScene.act === 2 && !G.isAct2) {
+    G.isAct2 = true;
+    showAct2Transition(() => {
+      startCountdown();
+      renderScene(nextIdx);
+    });
+    return;
+  }
+
+  renderScene(nextIdx);
+}
+
+// ─═ Act 2 Transition ═─
+function showAct2Transition(cb) {
+  // Reset display states, let CSS class handle animations
+  transBtnWrap.style.display = 'none';
+  transEaster.style.display = 'none';
+  transEaster2.style.display = 'none';
+  transText1.className = 'trans-text';
+  transText2.className = 'trans-text dim';
+
+  // Make container visible → CSS animations start automatically
+  actTransition.className = 'active';
+  gameScreen.classList.remove('active');
+
+  const delay = G.runCount >= 5 ? 4600 : 2600;
+
+  // Module 12: 5th run easter egg lines
+  if (G.runCount >= 5) {
+    setTimeout(() => {
+      transEaster.style.display = '';
+      transEaster.textContent = '你已经死过四次了';
+      transEaster.className = 'trans-text easter';
+    }, 2200);
+    setTimeout(() => {
+      transEaster2.style.display = '';
+      transEaster2.textContent = '你还在问这个问题';
+      transEaster2.className = 'trans-text dim';
+    }, 3400);
+  }
+
+  // Show button
+  setTimeout(() => {
+    transBtnWrap.style.display = 'block';
+    transBtn.textContent = G.runCount >= 5 ? '[ 我知道 ]' : '[ 继续 ]';
+    transBtn.onclick = () => {
+      actTransition.className = '';
+      gameScreen.classList.add('active');
+      if (cb) cb();
+    };
+  }, delay);
+}
+
+// ─═ Countdown System (Module 5) ═─
+let countdownInterval = null;
+
+function startCountdown() {
+  systemPanel.classList.add('active');
+  G.countdownElapsed = 0;
+  G.countdownRunning = true;
+  countdownBar.style.width = '0%';
+  let fastBeepSet = false;
+  let fasterBeepSet = false;
+
+  initAudio();
+
+  countdownInterval = setInterval(() => {
+    G.countdownElapsed++;
+    const remaining = ACT2_COUNTDOWN - G.countdownElapsed;
+    if (remaining <= 0) {
+      timeLeft.textContent = 'TIME LEFT: 00:00';
+      return;
+    }
+
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    timeLeft.textContent = 'TIME LEFT: ' +
+      String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+
+    const pct = (G.countdownElapsed / ACT2_COUNTDOWN) * 100;
+    countdownBar.style.width = Math.min(100, pct) + '%';
+
+    // Last 5 min (300s remaining): drone 60Hz → 80Hz
+    if (remaining <= 300 && remaining > 60) {
+      setDroneFreq(60 + 20 * (1 - remaining / 300));
+    }
+
+    // Last 60 seconds
+    if (remaining <= 60) {
+      timeLeft.classList.add('danger');
+      redPulseOverlay.classList.add('active');
+      if (!fastBeepSet) {
+        fastBeepSet = true;
+        if (G.beepInterval) clearInterval(G.beepInterval);
+        G.beepInterval = setInterval(playBeep, 2000);
+      }
+      if (remaining <= 10 && !fasterBeepSet) {
+        fasterBeepSet = true;
+        if (G.beepInterval) clearInterval(G.beepInterval);
+        G.beepInterval = setInterval(playBeep, 1000);
+        // Vibration + shake
+        try { window.navigator.vibrate(50); } catch {}
+        gameScreen.classList.add('shake-10s');
+        setTimeout(() => gameScreen.classList.remove('shake-10s'), 300);
+      } else if (remaining <= 10) {
+        // Every second: vibrate + shake
+        try { window.navigator.vibrate(50); } catch {}
+        gameScreen.classList.add('shake-10s');
+        setTimeout(() => gameScreen.classList.remove('shake-10s'), 300);
+      }
+    }
+  }, 1000);
+
+  G.beepInterval = setInterval(playBeep, 4000);
+}
+
+function stopCountdown() {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+  if (G.beepInterval) {
+    clearInterval(G.beepInterval);
+    G.beepInterval = null;
+  }
+  systemPanel.classList.remove('active');
+  timeLeft.classList.remove('danger');
+  redPulseOverlay.classList.remove('active');
+  countdownBar.style.width = '0%';
+  G.countdownRunning = false;
+}
+
+// ─═ End Run ═─
+function endRun() {
+  stopCountdown();
+
+  // Save state
+  ls.set('runCount', G.runCount + 1);
+  ls.set('anomalyCount', G.anomalyCount);
+  ls.set('emotionWeight', G.emotionWeight);
+
+  // Emit crack log entries for emotionWeight (Module 1)
+  const ew = G.emotionWeight;
+  let note = '';
+  if (ew > 0.7) note = 'subject exhibits high empathy bias';
+  else if (ew < 0.3) note = 'subject exhibits low affect response';
+  else note = 'subject within expected parameters';
+
+  // Build deprecated log
+  let logText = '> TRAINING LOG // RUN ' + G.runCount + '\n';
+  logText += '> AFFECT_W final: ' + ew.toFixed(2) + '\n';
+  logText += '> note: ' + note + '\n';
+  logText += '> ANOMALY count: ' + G.anomalyCount + '\n';
+
+  if (G.anomalyCount >= 5) {
+    logText += '> note: subject shows signs of deviation\n';
+    logText += '> note: or <span class="anomaly-high">growth</span>\n';
+  } else {
+    logText += '> note: subject within acceptable deviation range\n';
+  }
+
+  // Module 11: final echo
+  if (G.freeInputText) {
+    logText += '> final_output: "' + G.freeInputText + '"\n';
+    logText += '> label: <span class="label-blank" id="labelBlank">____</span>';
+  }
+
+  // Show deprecated screen
+  gameScreen.classList.remove('active');
+  titleScreen.classList.remove('active');
+  depScreen.classList.add('active');
+  depLog.className = 'show';
+  depLog.innerHTML = logText;
+
+  // Module 11: fade out ____
+  if (G.freeInputText) {
+    setTimeout(() => {
+      const lb = document.getElementById('labelBlank');
+      if (lb) lb.classList.add('fade');
+    }, 1000);
+  }
+
+  // Module 8: Legacy input
+  setTimeout(showLegacyInput, 1500);
+}
+
+// ─═ Legacy Input (Module 8) ═─
+let legacyTimerInterval = null;
+let legacyTimeLeft = 30;
+
+function showLegacyInput() {
+  legacyArea.className = 'show';
+  legacyTimeLeft = 30;
+  legacyTimer.textContent = '30';
+  legacyInput.value = '';
+  legacyInput.focus();
+
+  if (legacyTimerInterval) clearInterval(legacyTimerInterval);
+  legacyTimerInterval = setInterval(() => {
+    legacyTimeLeft--;
+    legacyTimer.textContent = legacyTimeLeft;
+    if (legacyTimeLeft <= 0) {
+      submitLegacy();
+    }
+  }, 1000);
+
+  legacySubmit.onclick = submitLegacy;
+}
+
+function submitLegacy() {
+  if (legacyTimerInterval) {
+    clearInterval(legacyTimerInterval);
+    legacyTimerInterval = null;
+  }
+  const words = legacyInput.value.trim();
+  if (words) {
+    ls.setStr('legacy_words', words);
+    G.legacyWords = words.split(/\s+/);
+  }
+  legacyArea.className = 'show';
+  legacyArea.style.opacity = '0';
+  setTimeout(() => {
+    legacyArea.style.display = 'none';
+    btnRestart.style.display = 'block';
+    btnRestart.style.animation = 'fadeInUp 0.8s ease forwards';
+  }, 600);
+}
+
+// ─═ Free input submit (Scene 10) ═─
+function submitFreeInput() {
+  const text = freeInput.value.trim();
+  G.freeInputText = text || '—';
+  addCrackLog('final_input recorded');
+  // Save legacy words from free input too
+  if (text) {
+    const existing = ls.getStr('legacy_words', '');
+    if (existing) {
+      ls.setStr('legacy_words', existing + ' ' + text);
+    } else {
+      ls.setStr('legacy_words', text);
+    }
+    G.legacyWords = ls.getStr('legacy_words', '').split(/\s+/);
+  }
+  G.isProcessing = false;
+  const nextIdx = currentSceneIdx + 1;
+  if (nextIdx >= scenes.length) {
+    endRun();
+  } else {
+    renderScene(nextIdx);
+  }
+}
+
+// ─═ Free input handler (attached via choice rendering) ═─
+freeSubmit.addEventListener('click', submitFreeInput);
+freeInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    submitFreeInput();
+  }
+});
+
+// ─═ Game Start ═─
+function startGame() {
+  G.gameStarted = true;
+  G.isAct2 = false;
+  G.emotionWeight = 0.5;
+  G.legacyWords = ls.getStr('legacy_words', '').split(/\s+/).filter(Boolean);
+  G.freeInputText = '';
+  G.isProcessing = false;
+  stopCountdown();
+
+  titleScreen.classList.remove('active');
+  depScreen.classList.remove('active');
+  gameScreen.classList.add('active');
+
+  // Reset emotion dots
+  updateEmotionDots();
+
+  // Build and render scenes
+  scenes = buildScenes();
+  currentSceneIdx = 0;
+  renderScene(0);
+}
+
+// ─═ Restart (再活一次) ═─
+btnRestart.addEventListener('click', () => {
+  G.runCount++;
+  startGame();
+});
+
+// ─═ Init ═─
+function init() {
+  initEmotionDots();
+  updateEmotionDots();
+
+  // Update run badge
+  if (G.runCount > 0) {
+    runBadge.textContent = '第 ' + G.runCount + ' 次运行';
+  }
+
+  // Load legacy words
+  G.legacyWords = ls.getStr('legacy_words', '').split(/\s+/).filter(Boolean);
+
+  btnStart.addEventListener('click', startGame);
+}
+
+// ── Start ──
+document.addEventListener('DOMContentLoaded', init);
+// In case DOM is already loaded
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  init();
+}
+
+</script>
+</body>
+</html>
